@@ -815,8 +815,10 @@ def plot_ccdf(delays, label, figsize=(10, 6)):
     ax.set_yscale('log')
     
     # Label the axes
-    ax.set_xlabel('Delay (ms)')
-    ax.set_ylabel('Probability')
+    ax.set_xlabel('Delay (ms)', fontsize=15)
+    ax.set_ylabel('Probability', fontsize=15)
+    ax.tick_params(axis='both', labelsize=16)
+
     
     # Add grid and legend
     ax.grid(True)
