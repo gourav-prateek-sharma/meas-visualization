@@ -10,6 +10,18 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 
+def get_scheduling_delay(send_ts, sched_arr, slots_per_frame=20, slots_duration_ms=0.5):
+    for j in range(0, len(sched_arr)):
+        if sched_arr[j]['schedule_ts']>send_ts and sched_arr[j]['schedule_ts']-send_ts<slots_per_frame*slots_duration_ms:
+            return (sched_arr[j]['schedule_ts']-send_ts)*1000
+    return None
+
+def get_frame_alignment_delay(send_ts, bsrupd_arr, slots_per_frame=20, slots_duration_ms=0.5):
+    for j in range(0, len(bsrupd_arr)):
+        if bsrupd_arr[j]['timestamp']>send_ts and bsrupd_arr[j]['timestamp']-send_ts<slots_per_frame*slots_duration_ms:
+            return (bsrupd_arr[j]['timestamp']-send_ts)*1000
+    return None
+    
 # return queueing delay in millisecons
 def get_queueing_delay(packet):
     min_delay = np.inf
