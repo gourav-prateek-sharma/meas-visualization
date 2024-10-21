@@ -10,10 +10,11 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 
-def get_scheduling_delay(packet, sched_sorted_list, slots_per_frame=20, slots_duration_ms=0.5):
-    idx=sched_sorted_list.bisect_right(packet['ip.in_t'])
-    if idx < len(sched_sorted_list):
-        return (sched_sorted_list[idx]-packet['ip.in_t'])*1000
+def get_scheduling_delay(packet, sched_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5):
+    idx=sched_sorted_dict.bisect_right(packet['ip.in_t'])
+    if idx < len(sched_sorted_dict):
+        schedule_ts = sched_sorted_dict[sched_sorted_dict.keys()[idx]]['schedule_ts']
+        return (schedule_ts-packet['ip.in_t'])*1000
     else:
         return None
 
@@ -48,9 +49,9 @@ def get_ran_delay_wo_frame_alignment_delay(packet, sr_bsr_tx_sorted_list, slots_
     else:
         return None
 
-def get_ran_delay_wo_scheduling_delay(packet, sched_sorted_list, slots_per_frame=20, slots_duration_ms=0.5):
-    if get_ran_delay(packet)!=None and get_scheduling_delay(packet, sched_sorted_list, slots_per_frame=20, slots_duration_ms=0.5)!=None:
-        return get_ran_delay(packet)-get_scheduling_delay(packet, sched_sorted_list, slots_per_frame=20, slots_duration_ms=0.5)
+def get_ran_delay_wo_scheduling_delay(packet, sched_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5):
+    if get_ran_delay(packet)!=None and get_scheduling_delay(packet, sched_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5)!=None:
+        return get_ran_delay(packet)-get_scheduling_delay(packet, sched_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5)
     else:
         return None
 
