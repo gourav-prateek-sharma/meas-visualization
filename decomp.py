@@ -10,8 +10,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 
+PACKET_IN_DECISION_DELAY_MIN = 2 # 2 slots delay between decision and in packet
+
 def get_scheduling_delay(packet, sched_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5):
-    idx=sched_sorted_dict.bisect_right(packet['ip.in_t'])
+    idx=sched_sorted_dict.bisect_right(packet['ip.in_t']+PACKET_IN_DECISION_DELAY_MIN*slots_duration_ms*0.001)
     if idx < len(sched_sorted_dict):
         schedule_ts = sched_sorted_dict[sched_sorted_dict.keys()[idx]]['schedule_ts']
         return (schedule_ts-packet['ip.in_t'])*1000
@@ -44,13 +46,13 @@ def get_ran_delay(packet):
         return None
 
 def get_ran_delay_wo_frame_alignment_delay(packet, sr_bsr_tx_sorted_list, slots_per_frame=20, slots_duration_ms=0.5):
-    if get_ran_delay(packet)!=None and get_frame_alignment_delay(packet, sr_bsr_tx_sorted_list, slots_per_frame=20, slots_duration_ms=0.5)!=None:
+    if get_ran_delay(packet)>0 and get_frame_alignment_delay(packet, sr_bsr_tx_sorted_list, slots_per_frame=20, slots_duration_ms=0.5)>0:
         return get_ran_delay(packet)-get_frame_alignment_delay(packet, sr_bsr_tx_sorted_list, slots_per_frame=20, slots_duration_ms=0.5)
     else:
         return None
 
 def get_ran_delay_wo_scheduling_delay(packet, sched_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5):
-    if get_ran_delay(packet)!=None and get_scheduling_delay(packet, sched_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5)!=None:
+    if get_ran_delay(packet)>0 and get_scheduling_delay(packet, sched_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5):
         return get_ran_delay(packet)-get_scheduling_delay(packet, sched_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5)
     else:
         return None
@@ -75,3 +77,17 @@ def get_retx_delay(packet):
             logger.error(f"Packet {packet['id']} mac.attempts not present")
             return None
     return max_delay
+
+def get_mcs(packet, mcs_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5):
+    idx=mcs_sorted_dict.bisect_right(packet['ip.in_t']+PACKET_IN_DECISION_DELAY_MIN*slots_duration_ms*0.001)
+    if idx < len(mcs_sorted_dict):
+        return mcs_sorted_dict[mcs_sorted_dict.keys()[idx]]
+    else:
+        return None    
+
+def get_tb(packet, tb_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5):
+    idx=tb_sorted_dict.bisect_right(packet['ip.in_t']+PACKET_IN_DECISION_DELAY_MIN*slots_duration_ms*0.001)
+    if idx < len(tb_sorted_dict):
+        return tb_sorted_dict[tb_sorted_dict.keys()[idx]]
+    else:
+        return None

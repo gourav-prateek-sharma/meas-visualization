@@ -825,3 +825,33 @@ def plot_ccdf(delays, label, figsize=(10, 6)):
     ax.legend()
     
     return fig, ax
+
+# Function to plot multiple CCDFs on the same axes
+def plot_multiple_ccdf(data_dict, ax):
+    for label, data in data_dict.items():
+        sorted_data = np.sort(data)
+        ccdf = 1. - np.arange(1, len(sorted_data) + 1) / len(sorted_data)
+        ax.plot(sorted_data, ccdf, label=label)
+    
+    ax.set_xlabel('Delay (ms)')
+    ax.set_ylabel('CCDF')
+    ax.grid(True)
+    ax.legend()
+
+# Function to plot CCDFs from multiple DB files on the same axes
+def plot_multiple_ccdf_per_delay_type(delay_values_per_db, delay_type_label, ax, labels=[], x_lim=70):
+    max_delay = -np.inf
+    for idx, data in enumerate(delay_values_per_db):
+        sorted_data = np.sort(data)
+        ccdf = 1. - np.arange(1, len(sorted_data) + 1) / len(sorted_data)
+        ax.plot(sorted_data, ccdf, label=labels[idx])
+        max_delay = max(max_delay, sorted_data[-1])
+    
+    # Set the y-axis to a logarithmic scale
+    ax.set_yscale('log')
+    ax.set_xlim([-0.1, min(x_lim, max_delay)])
+    ax.set_xlabel('Delay (ms)')
+    ax.set_ylabel('CCDF')
+    ax.grid(True)
+    ax.legend()
+    ax.set_title(f'CCDF of {delay_type_label}')
