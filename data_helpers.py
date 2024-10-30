@@ -37,7 +37,7 @@ def create_json_dump(data_list, file_name):
         print(f"Error creating JSON dump: {e}")
 
 
-def read_json_to_dict(file_name):
+def read_json(file_name):
     """
     Reads a JSON file and loads it into a Python dictionary.
     
@@ -51,5 +51,3 @@ def read_json_to_dict(file_name):
     except ValueError as e:
         print(f"Error reading JSON file: {e}")
         return None
-
-

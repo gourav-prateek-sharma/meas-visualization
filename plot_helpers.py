@@ -10,6 +10,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.stattools import acf
+
 
 if not os.getenv('DEBUG'):
     logger.remove()
@@ -687,7 +691,6 @@ def plot_packet_tree_from_ueipids(ue_ipid_list : list, ue_ip_packets_df, ue_iprl
     return begin_ts,end_ts
 
 
-
 # def plot_packet_tree(packet, prev_input_ip_ts, ax):
 #     # Starting point
 #     x_start, y_start = 0, 0
@@ -786,11 +789,7 @@ def plot_ccdfs(latencies, xlim=[5,12], ylim=[0.0001, 1], markers=[], linestyles=
     plt.savefig(filename) 
     plt.show()
 
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-def plot_ccdf(delays, label, figsize=(10, 6)):
+def plot_ccdf(delays, label, figsize=(10, 6), outlier=35, x_lim=50):
     """
     Plots the Complementary Cumulative Distribution Function (CCDF) of the given delays.
     
@@ -803,11 +802,12 @@ def plot_ccdf(delays, label, figsize=(10, 6)):
         fig, ax: The figure and axis objects of the plot.
     """
     fig, ax = plt.subplots(figsize=figsize)
-    
+    delays = delays[delays<outlier]
     # Sort the delay values and calculate the CCDF
     sorted_delays = np.sort(delays)
     ccdf = 1.0 - np.arange(1, len(sorted_delays) + 1) / len(sorted_delays)
-    
+    max_delay = sorted_delays[-1]
+
     # Plot the CCDF
     ax.plot(sorted_delays, ccdf, linestyle='-', linewidth=4, label=label)
     
@@ -818,6 +818,7 @@ def plot_ccdf(delays, label, figsize=(10, 6)):
     ax.set_xlabel('Delay (ms)', fontsize=15)
     ax.set_ylabel('Probability', fontsize=15)
     ax.tick_params(axis='both', labelsize=16)
+    ax.set_xlim([-0.1, min(x_lim, max_delay+5)])
 
     
     # Add grid and legend
@@ -838,14 +839,16 @@ def plot_multiple_ccdf(data_dict, ax):
     ax.grid(True)
     ax.legend()
 
-# Function to plot CCDFs from multiple DB files on the same axes
-def plot_multiple_ccdf_per_delay_type(delay_values_per_db, delay_type_label, ax, labels=[], x_lim=70):
+# Function to plot CCDFs from multiple meas files on the same axes
+def plot_multiple_ccdf_per_delay_type(delay_values_per_meas, delay_type_label, ax, labels=[], outlier=35, x_lim=60):
     max_delay = -np.inf
-    for idx, data in enumerate(delay_values_per_db):
-        sorted_data = np.sort(data)
-        ccdf = 1. - np.arange(1, len(sorted_data) + 1) / len(sorted_data)
-        ax.plot(sorted_data, ccdf, label=labels[idx])
-        max_delay = max(max_delay, sorted_data[-1])
+
+    for idx, data in enumerate(delay_values_per_meas):
+        delays = data[data<outlier]
+        sorted_delays = np.sort(delays)
+        ccdf = 1. - np.arange(1, len(sorted_delays) + 1) / len(sorted_delays)
+        ax.plot(sorted_delays, ccdf, label=labels[idx])
+        max_delay = max(max_delay, sorted_delays[-1])
     
     # Set the y-axis to a logarithmic scale
     ax.set_yscale('log')
@@ -855,3 +858,77 @@ def plot_multiple_ccdf_per_delay_type(delay_values_per_db, delay_type_label, ax,
     ax.grid(True)
     ax.legend()
     ax.set_title(f'CCDF of {delay_type_label}')
+
+
+def plot_multiple_histograms(values_per_meas, ax, labels=[], y_log=True, bins=10, outlier=None, width=0.3):
+    """
+    Plots histograms for multiple arrays side by side on the same axes with normalized frequency.
+
+    :param values_per_meas: List of arrays to plot
+    :param labels: List of labels for each array
+    :param ax: Axes object to plot on
+    :param bins: Number of bins for the histogram
+    :param outlier: Cap value for outliers (optional)
+    :param width: Width of each bar as a fraction of the bin width
+    """
+    # Cap values at the outlier threshold if specified
+    if outlier is not None:
+        values_per_meas = [np.minimum(data, outlier) for data in values_per_meas]
+    
+    # Determine bin edges based on the range across all arrays
+    min_value = min(np.min(data) for data in values_per_meas)
+    max_value = max(np.max(data) for data in values_per_meas)
+    bin_edges = np.linspace(min_value, max_value, bins + 1)
+    
+    # Plot each array as a separate bar chart, offset by `width`
+    for idx, (data, label) in enumerate(zip(values_per_meas, labels)):
+        hist, _ = np.histogram(data, bins=bin_edges)
+        hist = hist / len(data)  # Normalize frequency by the length of the data
+        bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
+        
+        # Offset each bar by its index for side-by-side effect
+        ax.bar(bin_centers + idx * width - (width * len(values_per_meas) / 2), 
+               hist, width=width, alpha=0.6, label=label, edgecolor='black')
+    
+    ax.set_xlabel('Value')
+    ax.set_ylabel('Normalized Frequency')
+    if y_log:
+        ax.set_yscale('log')
+    ax.grid(True)
+    ax.legend()
+
+
+def calculate_correlation(vector1, vector2):
+    """
+    Calculates and returns the Pearson correlation coefficient between two vectors.
+    
+    :param vector1: First vector (numpy array or list)
+    :param vector2: Second vector (numpy array or list)
+    :return: Correlation coefficient between vector1 and vector2
+    """
+    if len(vector1) != len(vector2):
+        raise ValueError("Vectors must be the same length.")
+    
+    # Calculate correlation coefficient
+    correlation_matrix = np.corrcoef(vector1, vector2)
+    correlation_coefficient = correlation_matrix[0, 1]
+    
+    return correlation_coefficient
+
+def plot_autocorr(delays, label, figsize=(10, 6), outlier=35, x_lim=100):
+    # Cap delays at the outlier value
+    delays = np.minimum(delays, outlier)
+    
+    # Calculate autocorrelation up to x_lim lags or the length of the data, whichever is smaller
+    autocorr_values = acf(delays, nlags=min(x_lim, len(delays) - 1), fft=True)
+    
+    # Plotting the autocorrelation
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.stem(range(len(autocorr_values)), autocorr_values)  # Adjust range to length of autocorr_values
+    ax.set_xlabel('Lag')
+    ax.set_ylabel('Autocorrelation')
+    ax.set_title(f'Autocorrelation of Delays - {label}')
+    ax.set_xlim(0, min(x_lim, len(delays) - 1))
+    ax.grid(True)
+    
+    return fig, ax
