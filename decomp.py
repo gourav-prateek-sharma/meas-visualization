@@ -160,7 +160,7 @@ def get_segmentation_delay(packet):
 def get_segments(packet):
     return len(set([rlc_seg['so'] for rlc_seg in packet['rlc.attempts']]))
 
-def get_mcs(packet, mcs_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5):
+def get_mcs(packet, mcs_sorted_dict, rnti='', slots_per_frame=20, slots_duration_ms=0.5):
     idx=mcs_sorted_dict.bisect_right(packet['ip.in_t']+PACKET_IN_DECISION_DELAY_MIN*slots_duration_ms*0.001)
     if idx < len(mcs_sorted_dict):
         return mcs_sorted_dict[mcs_sorted_dict.keys()[idx]]['mcs']
