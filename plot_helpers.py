@@ -13,6 +13,8 @@ import numpy as np
 import numpy as np
 import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import acf
+import seaborn as sns
+
 
 
 if not os.getenv('DEBUG'):
@@ -840,7 +842,7 @@ def plot_multiple_ccdf(data_dict, ax):
     ax.legend()
 
 # Function to plot CCDFs from multiple meas files on the same axes
-def plot_multiple_ccdf_per_delay_type(delay_values_per_meas, delay_type_label, ax, labels=[], outlier=35, x_lim=60):
+def plot_multiple_ccdf_per_delay_type(delay_values_per_meas, ax, delay_type_label='_', labels=[], outlier=35, x_lim=60):
     max_delay = -np.inf
 
     for idx, data in enumerate(delay_values_per_meas):
@@ -860,7 +862,7 @@ def plot_multiple_ccdf_per_delay_type(delay_values_per_meas, delay_type_label, a
     ax.set_title(f'CCDF of {delay_type_label}')
 
 
-def plot_multiple_histograms(values_per_meas, ax, labels=[], y_log=True, outlier=None):
+def plot_multiple_histograms(values_per_meas, ax, labels=[], y_log=True, delay_type_label='_', outlier=None):
     """
     Plots histograms for multiple arrays side by side on the same axes with normalized frequency.
 
@@ -901,7 +903,7 @@ def plot_multiple_histograms(values_per_meas, ax, labels=[], y_log=True, outlier
         ax.set_yscale('log')
     ax.grid(True)
     ax.legend()
-
+    ax.set_title(f'Histogram of {delay_type_label}')
 
 
 def calculate_correlation(vector1, vector2):
