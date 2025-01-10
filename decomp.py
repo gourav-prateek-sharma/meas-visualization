@@ -10,11 +10,11 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 
-PACKET_IN_DECISION_DELAY_MIN = 2 # 2 slots delay between decision and in packet
+PACKET_IN_DECISION_DELAY_MIN = 10 # slots delay between decision and in packet
 
 def get_scheduling_delay(packet, sched_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5):
     idx=sched_sorted_dict.bisect_right(packet['ip.in_t']+PACKET_IN_DECISION_DELAY_MIN*slots_duration_ms*0.001)
-    if idx < len(sched_sorted_dict):
+    if idx!=None and idx < len(sched_sorted_dict):
         schedule_ts = sched_sorted_dict[sched_sorted_dict.keys()[idx]]['schedule_ts']
         return (schedule_ts-packet['ip.in_t'])*1000
     else:
@@ -22,7 +22,7 @@ def get_scheduling_delay(packet, sched_sorted_dict, slots_per_frame=20, slots_du
 
 def get_frame_alignment_delay(packet, sr_bsr_tx_sorted_list, slots_per_frame=20, slots_duration_ms=0.5):
     idx=sr_bsr_tx_sorted_list.bisect_right(packet['ip.in_t'])
-    if idx < len(sr_bsr_tx_sorted_list):
+    if idx!=None and idx < len(sr_bsr_tx_sorted_list):
         return (sr_bsr_tx_sorted_list[idx]-packet['ip.in_t'])*1000
     else:
         return None
@@ -30,7 +30,7 @@ def get_frame_alignment_delay(packet, sr_bsr_tx_sorted_list, slots_per_frame=20,
 
 def get_buffer_len(packet, bsrupd_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5):
     idx=bsrupd_sorted_dict.bisect_right(packet['ip.in_t'])
-    if idx < len(bsrupd_sorted_dict):
+    if idx!=None and idx < len(bsrupd_sorted_dict):
         return bsrupd_sorted_dict[bsrupd_sorted_dict.keys()[idx]]['len']
     else:
         return None
@@ -65,12 +65,12 @@ def get_queueing_delay_wo_scheduling_delay(packet, sched_sorted_dict, slots_per_
     else:
         return None
             
-# return ran delay in millisecons
+# return ran delay in milliseconds: 
 def get_ran_delay(packet):
-    if packet.get('ip.out_t')!=None and packet.get('ip.in_t')!=None:
-        return (packet['ip.out_t']-packet['ip.in_t'])*1000
+    if packet.get('rlc.out_t')!=None and packet.get('ip.in_t')!=None:
+        return (packet['rlc.out_t']-packet['ip.in_t'])*1000
     else:
-        logger.error(f"Packet {packet['id']} either ip.in_t or ip.out_t not present")
+        logger.error(f"Packet {packet['id']} either ip.in_t or rlc.out_t not present")
         return None
 
 def get_ran_delay_wo_frame_alignment_delay(packet, sr_bsr_tx_sorted_list, slots_per_frame=20, slots_duration_ms=0.5):
@@ -210,5 +210,17 @@ def get_tb(packet, tb_sorted_dict, slots_per_frame=20, slots_duration_ms=0.5):
     else:
         return None
     
+# check this
 def get_rlc_reassembely_delay(packet):
-    return (packet['ip.out_t']-packet['rlc.out_t'])*1000
+    return (packet['rlc.out_t']-packet['rlc.out_t'])*1000
+
+
+def get_segment_attempt_delay(rlc_seg):
+    return (rlc_seg['mac.out_t']-rlc_seg['mac.in_t'])*1000
+
+def get_rlc_segment_len(rlc_seg):
+    return rlc_seg['len']
+
+def get_rlc_segment_mac_attempts(rlc_seg):
+    return len(rlc_seg['mac.attempts'])
+
