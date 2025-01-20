@@ -923,20 +923,39 @@ def calculate_correlation(vector1, vector2):
     
     return correlation_coefficient
 
-def plot_autocorr(delays, label, figsize=(10, 6), outlier=35, x_lim=100):
-    # Cap delays at the outlier value
-    delays = np.minimum(delays, outlier)
-    
-    # Calculate autocorrelation up to x_lim lags or the length of the data, whichever is smaller
-    autocorr_values = acf(delays, nlags=min(x_lim, len(delays) - 1), fft=True)
-    
-    # Plotting the autocorrelation
-    fig, ax = plt.subplots(figsize=figsize)
-    ax.stem(range(len(autocorr_values)), autocorr_values)  # Adjust range to length of autocorr_values
-    ax.set_xlabel('Lag')
-    ax.set_ylabel('Autocorrelation')
-    ax.set_title(f'Autocorrelation of Delays - {label}')
-    ax.set_xlim(0, min(x_lim, len(delays) - 1))
-    ax.grid(True)
-    
-    return fig, ax
+def plot_autocorrelation(data, max_lag=None):
+        """
+        Plots the autocorrelation of a given list of data for different lag values.
+
+        Parameters:
+        - data (list or np.array): Input list of numerical values.
+        - max_lag (int, optional): Maximum lag to compute autocorrelation for. 
+        Defaults to len(data) - 1 if not specified.
+        """
+        # Convert input data to a NumPy array for efficient computation
+        data = np.array(data)
+
+        if max_lag is None:
+            max_lag = len(data) - 1
+
+        # Initialize an array to store autocorrelation values
+        autocorr_values = []
+
+        # Compute autocorrelation for each lag
+        for lag in range(max_lag + 1):
+            # Lagged data
+            y1 = data[:len(data) - lag]
+            y2 = data[lag:]
+
+            # Normalize to get the autocorrelation value
+            corr = np.corrcoef(y1, y2)[0, 1] if len(y1) > 1 else 0
+            autocorr_values.append(corr)
+
+        # Plot the autocorrelation values
+        plt.figure(figsize=(10, 6))
+        plt.stem(range(max_lag + 1), autocorr_values, use_line_collection=True)
+        plt.title('Autocorrelation Plot')
+        plt.xlabel('Lag')
+        plt.ylabel('Autocorrelation')
+        plt.grid(True)
+        plt.show()
