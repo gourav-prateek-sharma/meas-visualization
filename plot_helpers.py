@@ -950,12 +950,11 @@ def plot_autocorrelation(data, max_lag=None):
             # Normalize to get the autocorrelation value
             corr = np.corrcoef(y1, y2)[0, 1] if len(y1) > 1 else 0
             autocorr_values.append(corr)
-
-        # Plot the autocorrelation values
-        plt.figure(figsize=(10, 6))
-        plt.stem(range(max_lag + 1), autocorr_values, use_line_collection=True)
-        plt.title('Autocorrelation Plot')
-        plt.xlabel('Lag')
-        plt.ylabel('Autocorrelation')
-        plt.grid(True)
-        plt.show()
+            # Plot the autocorrelation values
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.stem(range(max_lag + 1), autocorr_values, use_line_collection=True)
+            ax.set_title('Autocorrelation Plot')
+            ax.set_xlabel('Lag')
+            ax.set_ylabel('Autocorrelation')
+            ax.grid(True)
+            return fig, ax
